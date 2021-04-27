@@ -111,8 +111,11 @@ def renicer_thread(pool):
         pass
 
 
-def _sleeper(id_, *args, **kwargs):
-    sleep(random() * 10)
+def _sleeper(id_, *args, progress=None, **kwargs):
+    size = int(random() * 10) + 1
+    for idx in range(size):
+        progress.report(idx, base=size)
+        sleep(1)
     getLogger('JobRunner').info('done %i', id_)
 
 
