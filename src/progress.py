@@ -209,7 +209,15 @@ class ProgressResult(WrappedObject):
                 end="\r"
             )
 
-    def print_info(self, style: Style, bar_length: int, output_lines, max_len: int, fill_char: str = "#", main_name: str = 'Total Progress'):
+    def print_info(
+        self,
+        style: Style,
+        bar_length: int,
+        output_lines,
+        max_len: int,
+        fill_char: str = "#",
+        main_name: str = 'Total Progress'
+    ):
         # style 0, where the lowest ID'd active job is tracked
         if style == 0:
             for rel_id, job_id in enumerate(self.id_range):
