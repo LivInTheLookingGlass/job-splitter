@@ -39,3 +39,13 @@ The random object is provided by the random module, and is initialized to the sa
 The configuration object is provided by the configparser module, and can largely be thought of as a two-layer dictionary. The first layer is the section name, the second the configuration name, and the third the configuration value (as a string).
 
 The ProgressReporter object is provided by this package. Calling its .get() method will allow you to report how far along the job you are, to be displayed in the main console. If you do not wish this to be out of 100, provide a custom base value.
+
+## Building
+
+To build, call `make exe` in the src directory. Note that this will only package for the OS version you are presently on. It is strongly advised that you build on the oldest version you plan to support.
+
+If the Makefile provided is insufficient for your project, it at least gives you a place to start. For including additional files or imports that are not discovered automatically, please see the PyInstaller docs
+
+## Distributing
+
+Copy the resulting one-file program to each machine, as well as the related configuration files. When run on the new host, it will unpack your Python code and associated data, then run the program.
