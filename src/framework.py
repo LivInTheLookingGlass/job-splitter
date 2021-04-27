@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections import OrderedDict
 from configparser import ConfigParser
 from copy import copy
@@ -16,10 +14,11 @@ from random import Random, random
 from subprocess import run
 from time import sleep, time
 from threading import Thread
-from typing import Any, Callable, Iterable, Optional, Sequence, TypeVar, cast
+from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, TypeVar, cast
 
 from multiprocessing_logging import install_mp_handler
-from progress import ProgressPool, Style
+
+from .progress import ProgressPool, Style
 
 try:
     from os import nice
@@ -32,11 +31,16 @@ except ImportError:
 
 T = TypeVar("T")
 
+MACHINES_CONFIG = Path('machines.json')
+CSV_HEADER = Path('header.csv')
+RUNNER_CONFIG = Path('runner.config')
+LOG_TEMPLATE = Path('logging.template')
+
 CONFIGS = [
-    MACHINES_CONFIG := Path('machines.json'),
-    CSV_HEADER := Path('header.csv'),
-    RUNNER_CONFIG := Path('runner.config'),
-    LOG_TEMPLATE := Path('logging.template'),
+    MACHINES_CONFIG,
+    CSV_HEADER,
+    RUNNER_CONFIG,
+    LOG_TEMPLATE,
 ]
 DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('defaults', 'runner.config')
 RESULTS_CSV = Path('results.csv')
@@ -80,7 +84,7 @@ def make_config_files():
         raise FileNotFoundError("Your configuration files have been created. Please fill them out.")
 
 
-def get_machines() -> OrderedDict[str, tuple[int, int]]:
+def get_machines():  # -> OrderedDict[str, Tuple[int, int]]:
     """Read the list of machine names and their associated thread weights and number of threads."""
     decoder = JSONDecoder(object_pairs_hook=OrderedDict)
     with MACHINES_CONFIG.open('r') as f:

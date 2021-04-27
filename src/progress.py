@@ -4,8 +4,6 @@ Using several subclasses and wrapper objects, this module injects data into the 
 as the API for this does not change substantially, this module should work, and does not need to be updated very
 frequently.
 """
-from __future__ import annotations
-
 from collections import defaultdict
 from contextlib import contextmanager
 from enum import IntEnum
@@ -14,11 +12,11 @@ from itertools import count
 from multiprocessing import TimeoutError, get_context
 from multiprocessing.pool import AsyncResult, IMapIterator, Pool, mapstar, starmapstar  # type: ignore
 from time import sleep, time
-from queue import SimpleQueue
+from queue import Queue
 from sys import stdout
 from random import random
 from threading import Thread
-from typing import Any, Callable, Generic, Iterable, Iterator, Mapping, Optional, Sequence, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, Iterator, List, Mapping, Optional, Sequence, TypeVar
 from warnings import warn
 
 try:
@@ -32,8 +30,8 @@ except Exception:
 # TODO: custom bar format
 
 _pool_id_gen = count()
-_pool_queue_map: dict[int, SimpleQueue] = {}
-_singleton_map: dict[str, 'Singleton'] = {}
+_pool_queue_map: Dict[int, Queue] = {}
+_singleton_map: Dict[str, 'Singleton'] = {}
 
 _T = TypeVar("_T")
 _U = TypeVar("_U")
@@ -104,7 +102,7 @@ class ProgressReporter:
 
 def _initializer(
     q_id: int,
-    queue: SimpleQueue,
+    queue: Queue,
     orig_init: Optional[Callable],
     initargs: Sequence[Any] = ()
 ):
@@ -180,7 +178,10 @@ class ProgressResult(WrappedObject):
         elif style == Style.ACTIVE_JOBS_AND_TOTAL:
             known_done = set()
             for rel_id, job_id in enumerate(self.id_range):
-                if job_id not in known_done and (prog := self._pool.get_progress(job_id)):
+                if job_id in known_done:
+                    continue
+                prog = self._pool.get_progress(job_id)
+                if prog:
                     key = f'Job {str(rel_id).zfill(max_len)} Progress'
                     if prog >= 100.0:
                         known_done.add(job_id)
@@ -314,7 +315,7 @@ class ProgressImapResult(ProgressResult, Iterable[_T]):
 
 
 class ProgressMapResult(ProgressResult, Generic[_T]):
-    def __init__(self, result: AsyncResult[_T], id_range: Sequence[int]):
+    def __init__(self, result: AsyncResult, id_range: Sequence[int]):
         super().__init__(result, id_range)
 
     def get(
@@ -369,7 +370,7 @@ class ProgressPool(Pool):
     ):
         context = context or get_context()
         self._pool_id = next(_pool_id_gen)
-        self._prog_queue: SimpleQueue = context.SimpleQueue()
+        self._prog_queue: Queue = context.Queue()
         _pool_queue_map[self._pool_id] = self._prog_queue
         self._id_generator = count()
         initializer = partial(_initializer, self._pool_id, self._prog_queue, initializer, initargs)
@@ -458,7 +459,7 @@ class ProgressPool(Pool):
         bar_length: int = 10,
         fill_char: str = "#",
         main_name: str = 'Total Progress'
-    ) -> list[_T]:
+    ) -> List[_T]:
         return self._map_async(
             func,
             iterable,
@@ -480,7 +481,7 @@ class ProgressPool(Pool):
         bar_length: int = 10,
         fill_char: str = "#",
         main_name: str = 'Total Progress'
-    ) -> list[_T]:
+    ) -> List[_T]:
         return self._map_async(
             func,
             iterable,
@@ -576,9 +577,11 @@ def demo_sleep(t: float, progress: ProgressReporter):
     """Sleep, but report progress back to the main process."""
     start = time()
     limit = start + (t or float('inf'))
-    while (now := time()) < limit:
+    now = time()
+    while now < limit:
         progress.report((now - start) / t, base=1.0)
         sleep(1)
+        now = time()
 
 
 if __name__ == '__main__':

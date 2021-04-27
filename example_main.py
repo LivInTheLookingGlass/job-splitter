@@ -1,4 +1,4 @@
-from framework import run_jobs, _sleeper
+from src.framework import run_jobs, _sleeper
 from logging import basicConfig, DEBUG
 
 
