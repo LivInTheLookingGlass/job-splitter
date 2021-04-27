@@ -205,10 +205,10 @@ class ProgressResult(WrappedObject):
                     i=done,
                     l=len(self.id_range)
                 ),
-                end=""
+                end="\r"
             )
 
-    def print_info(self, style: Style, bar_length: int, output_lines, max_len: int, fill_char: str = "#"):
+    def print_info(self, style: Style, bar_length: int, output_lines, max_len: int, fill_char: str = "#", main_name: str = 'Total Progress'):
         # style 0, where the lowest ID'd active job is tracked
         if style == 0:
             for rel_id, job_id in enumerate(self.id_range):
@@ -221,7 +221,7 @@ class ProgressResult(WrappedObject):
                     for job_id in self.id_range
                 ) / len(self.id_range)
                 cells = int(t_progress * bar_length / 100.0)
-                output_lines['Total Progress'] = "[{done}{padding}] {percent:2.02f}% ({i}/{l})".format(
+                output_lines[main_name] = "[{done}{padding}] {percent:2.02f}% ({i}/{l})".format(
                     done=fill_char * cells,
                     padding=" " * (bar_length - cells),
                     percent=t_progress,
@@ -233,7 +233,7 @@ class ProgressResult(WrappedObject):
             self._handle_multiple(0, 0, max_len, style, bar_length, fill_char, output_lines)
             t_progress = sum(self._pool.get_progress(job_id) for job_id in self.id_range) / len(self.id_range)
             cells = int(t_progress * bar_length / 100.0)
-            output_lines['Total Progress'] = "[{done}{padding}] {percent:2.02f}%".format(
+            output_lines[main_name] = "[{done}{padding}] {percent:2.02f}%".format(
                 done=fill_char * cells,
                 padding=" " * (bar_length - cells),
                 percent=t_progress
@@ -247,14 +247,15 @@ class ProgressResult(WrappedObject):
             length = len(self.id_range)
             if length <= 1 or (time() % 4) < 2:
                 print(
-                    "\rTotal Progress: [{done}{padding}] {percent:2.02f}% ({i}/{l})".format(
+                    "\r{main_name}: [{done}{padding}] {percent:2.02f}% ({i}/{l})".format(
+                        main_name=main_name,
                         done=fill_char * cells,
                         padding=" " * (bar_length - cells),
                         percent=t_progress,
                         i=done,
                         l=length
                     ),
-                    end=""
+                    end="\r"
                 )
             else:
                 for rel_id, job_id in enumerate(self.id_range):
@@ -274,13 +275,15 @@ class ProgressImapResult(ProgressResult, Iterable[_T]):
         style: Style,
         bar_length: int,
         fill_char: str,
-        pool: 'ProgressPool'
+        pool: 'ProgressPool',
+        main_name: str = 'Total Progress'
     ):
         super().__init__(result, id_range)
         self.style = style
         self.bar_length = bar_length
         self._pool = pool
         self.fill_char = fill_char
+        self.main_name = main_name
 
     def __iter__(self) -> Iterator[_T]:
         max_len = len(str(len(self.id_range) - 1))
@@ -289,7 +292,7 @@ class ProgressImapResult(ProgressResult, Iterable[_T]):
         context = output(output_type='dict') if style != Style.NON_TTY_SAFE else nullcontext({})
         with context as output_lines:
             while True:
-                self.print_info(style, self.bar_length, output_lines, max_len, self.fill_char)
+                self.print_info(style, self.bar_length, output_lines, max_len, self.fill_char, self.main_name)
                 try:
                     yield self.next(timeout=0.05)
                 except TimeoutError:
@@ -310,7 +313,8 @@ class ProgressMapResult(ProgressResult, Generic[_T]):
         timeout: float = None,
         style: Style = Style.ACTIVE_JOBS_AND_TOTAL,
         bar_length: int = 10,
-        fill_char: str = "#"
+        fill_char: str = "#",
+        main_name: str = 'Total Progress'
     ):
         if timeout is None:
             limit = float('inf')
@@ -321,7 +325,7 @@ class ProgressMapResult(ProgressResult, Generic[_T]):
         context = output(output_type='dict') if style != Style.NON_TTY_SAFE else nullcontext({})
         with context as output_lines:
             while not self.ready() and time() < limit:
-                self.print_info(style, bar_length, output_lines, max_len, fill_char)
+                self.print_info(style, bar_length, output_lines, max_len, fill_char, main_name)
                 sleep(0.05)
         if style == 2:
             print()
@@ -406,12 +410,14 @@ class ProgressPool(Pool):
         callback: Optional[Callable[[_T], None]] = None,
         error_callback: Optional[Callable[[BaseException], None]] = None,
         style: Style = Style.ACTIVE_JOBS_AND_TOTAL,
-        bar_length: int = 10
+        bar_length: int = 10,
+        main_name: str = 'Total Progress'
     ) -> _T:
         return self.apply_async(func, args, kwds, callback, error_callback).get(
             None,
             style,
-            bar_length
+            bar_length,
+            main_name
         )
 
     def apply_async(  # type: ignore[override]
@@ -441,7 +447,8 @@ class ProgressPool(Pool):
         chunksize=None,
         style: Style = Style.ACTIVE_JOBS_AND_TOTAL,
         bar_length: int = 10,
-        fill_char: str = "#"
+        fill_char: str = "#",
+        main_name: str = 'Total Progress'
     ) -> list[_T]:
         return self._map_async(
             func,
@@ -451,7 +458,8 @@ class ProgressPool(Pool):
         ).get(
             style=style,
             bar_length=bar_length,
-            fill_char=fill_char
+            fill_char=fill_char,
+            main_name=main_name
         )
 
     def starmap(
@@ -461,7 +469,8 @@ class ProgressPool(Pool):
         chunksize=None,
         style: Style = Style.ACTIVE_JOBS_AND_TOTAL,
         bar_length: int = 10,
-        fill_char: str = "#"
+        fill_char: str = "#",
+        main_name: str = 'Total Progress'
     ) -> list[_T]:
         return self._map_async(
             func,
@@ -471,7 +480,8 @@ class ProgressPool(Pool):
         ).get(
             style=style,
             bar_length=bar_length,
-            fill_char=fill_char
+            fill_char=fill_char,
+            main_name=main_name
         )
 
     def _map_async(
@@ -530,6 +540,7 @@ class ProgressPool(Pool):
         style: Style = Style.ACTIVE_JOBS_AND_TOTAL,
         bar_length: int = 10,
         fill_char: str = "#",
+        main_name: str = 'Total Progress',
         **kwargs
     ) -> ProgressImapResult[_T]:
         is_star = (mapper is starmapstar)
@@ -549,7 +560,7 @@ class ProgressPool(Pool):
                 *args,
                 **kwargs
             )
-        return ProgressImapResult(iterator, ids, style, bar_length, fill_char, self)
+        return ProgressImapResult(iterator, ids, style, bar_length, fill_char, self, main_name)
 
 
 def demo_sleep(t: float, progress: ProgressReporter):
