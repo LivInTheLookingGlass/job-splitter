@@ -327,8 +327,8 @@ class ProgressMapResult(ProgressResult, Generic[_T]):
             while not self.ready() and time() < limit:
                 self.print_info(style, bar_length, output_lines, max_len, fill_char, main_name)
                 sleep(0.05)
-        if style == 2:
-            print()
+        # if style == 2:
+            # print()
         return self._wrapped_object.get(timeout=0)
 
 
