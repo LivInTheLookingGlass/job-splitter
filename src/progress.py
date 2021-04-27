@@ -4,6 +4,7 @@ Using several subclasses and wrapper objects, this module injects data into the 
 as the API for this does not change substantially, this module should work, and does not need to be updated very
 frequently.
 """
+from __future__ import annotations
 
 from collections import defaultdict
 from contextlib import contextmanager
