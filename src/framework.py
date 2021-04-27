@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import OrderedDict
 from configparser import ConfigParser
 from copy import copy
@@ -29,9 +31,6 @@ except ImportError:
 # TODO: log zipper
 
 T = TypeVar("T")
-
-print(__file__)
-input()
 
 CONFIGS = [
     MACHINES_CONFIG := Path('machines.json'),
