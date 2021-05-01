@@ -203,22 +203,23 @@ def run_jobs(
     if seed is override_seed:
         logger.info('Using override seed for random module: %r', seed)
     random_obj = Random(seed)
-    random_obj.shuffle(working_set)
+    indexed_set = list(enumerate(working_set))
+    random_obj.shuffle(indexed_set)
 
     if ID is not None:
         START = sum(weights[:ID]) * lw // TOTAL
         STOP = sum(weights[:ID + 1]) * lw // TOTAL
-        working_set = working_set[START:STOP]
+        indexed_set = indexed_set[START:STOP]
     else:
         START = 0
-    working_set = [(*items, copy(random_obj), config) for items in working_set]
+    indexed_set = [(idx, (*items, copy(random_obj), config)) for idx, items in enumerate(working_set)]
     response = ''
 
     while not response.lower().startswith('y'):
         response = input((
             'I am {0}. Please verify this is correct.  Checksum: {1}.\n'
             '{2} jobs now queued ({3}-{4}). Total size {5}. (y/n)? '
-        ).format("N/A" if ID is None else names[ID], entropy.hex(), len(working_set), START, STOP - 1, lw))
+        ).format("N/A" if ID is None else names[ID], entropy.hex(), len(indexed_set), START, STOP - 1, lw))
         if response.lower().startswith('n'):
             exit(1)
 
@@ -226,7 +227,7 @@ def run_jobs(
         num_cores = cpu_count()
     else:
         num_cores = machines[names[ID]][1]
-    logger.info('%i jobs now queued (%i-%i). Total size %i', len(working_set), START, STOP - 1, lw)
+    logger.info('%i jobs now queued (%i-%i). Total size %i', len(indexed_set), START, STOP - 1, lw)
     logger.info(f"This machine will use {num_cores} worker cores")
 
     setup_function(config, *setupargs)
@@ -241,9 +242,9 @@ def run_jobs(
     with ProgressPool(num_cores, initializer=process_initializer, initargs=initargs) as p:
         renicer = Thread(target=renicer_thread, args=(p, ), daemon=True)
         renicer.start()
-        for idx, result in enumerate(p.istarmap_unordered(
-            job,
-            working_set,
+        for idx, (job_id, result) in enumerate(p.istarmap_unordered(
+            partial(_indexed_job, job),
+            indexed_set,
             chunksize=int(config['ProgressPool']['chunksize']),
             bar_length=int(config['ProgressPool']['bar_length']),
             style=Style(int(config['ProgressPool']['style'])),
