@@ -22,12 +22,13 @@ class ZippedRotatingFileHandler(RotatingFileHandler):
                 with open(self.baseFilename, 'rb') as f:
                     dest.writestr(basename, f.read())
                 remove(self.baseFilename)
+                max_digits = len(str(self.backupCount))
                 for i in range(1, self.backupCount):
                     fn = "%s.%d.zip" % (self.baseFilename, i)
                     if not path.exists(fn):
                         break
                     with ZipFile(fn, 'r', compression=ZIP_DEFLATED, compresslevel=9, allowZip64=True) as src:
-                        dest.writestr(path.basename(fn.rstrip('.zip')), src.read(basename))
+                        dest.writestr(path.basename(basename + '.' + str(i).zfill(max_digits)), src.read(basename))
                     remove(fn)
         self.__closed = True
 

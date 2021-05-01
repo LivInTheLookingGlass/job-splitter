@@ -24,7 +24,7 @@ if __name__ == '__main__':
         mode='w',
         encoding='utf-8',
         maxBytes=config.getfilesize('logging', 'max_file_size'),  # type: ignore # pylint: disable=no-member
-        backupCount=1 << 10  # meant to be functionally infinite
+        backupCount=config.getfilesize('logging', 'backup_count'),  # type: ignore # pylint: disable=no-member
     )
 
     fh.setLevel(config.getint('logging', 'level'))
