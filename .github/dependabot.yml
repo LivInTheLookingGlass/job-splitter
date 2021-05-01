@@ -10,4 +10,5 @@ updates:
     schedule:
       interval: "daily"
     allow:
-      all
+      # Allow both direct and indirect updates for all packages
+      - dependency-type: "all"
