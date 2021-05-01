@@ -25,10 +25,6 @@ try:
 except ImportError:
     pass
 
-# TODO: make able to distribute via PyInstaller if necessary
-# TODO: default log template
-# TODO: log zipper
-
 T = TypeVar("T")
 
 MACHINES_CONFIG = Path('machines.json')
