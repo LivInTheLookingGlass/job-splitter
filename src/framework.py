@@ -1,12 +1,12 @@
 from collections import OrderedDict
-from configparser import ConfigParser
+from configparser import ConfigParser, ExtendedInterpolation
 from copy import copy
 from csv import writer
 from dis import distb
 from hashlib import sha3_512
 from io import StringIO
 from json import JSONDecoder
-from logging import getLogger
+from logging import getLogger, CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 from os import cpu_count
 from pathlib import Path
 from pickle import dumps
@@ -14,7 +14,7 @@ from random import Random, random
 from subprocess import run
 from time import sleep, time
 from threading import Thread
-from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, TypeVar, cast
+from typing import Any, Callable, Iterable, Optional, Sequence, TypeVar, cast
 
 from multiprocessing_logging import install_mp_handler
 
@@ -91,12 +91,44 @@ def get_machines():  # -> OrderedDict[str, Tuple[int, int]]:
         return decoder.decode(f.read())
 
 
+def parse_file_size(value: str) -> int:
+    """Parse a string to return an integer file size."""
+    value = value.lower()
+    if value.endswith('t') or value.endswith('tib'):
+        return int(value.rstrip('t').rstrip('tib')) << 40
+    elif value.endswith('g') or value.endswith('gib'):
+        return int(value.rstrip('g').rstrip('gib')) << 30
+    elif value.endswith('m') or value.endswith('mib'):
+        return int(value.rstrip('m').rstrip('mib')) << 20
+    elif value.endswith('k') or value.endswith('kib'):
+        return int(value.rstrip('k').rstrip('kib')) << 10
+    elif value.endswith('tb'):
+        return int(value[:2]) * 10**12
+    elif value.endswith('gb'):
+        return int(value[:2]) * 10**9
+    elif value.endswith('mb'):
+        return int(value[:2]) * 10**6
+    elif value.endswith('kb'):
+        return int(value[:2]) * 10**3
+    return int(value)
+
+
 def get_config() -> ConfigParser:
     """Read and parse the configuration file."""
-    config = ConfigParser()
+    config = ConfigParser(interpolation=ExtendedInterpolation(), converters={'filesize': parse_file_size})
     with DEFAULT_CONFIG_PATH.open('r') as f:
         config.read_file(f)
     config.read(RUNNER_CONFIG)
+
+    config['logging']['level'] = {
+        'CRITICAL': str(CRITICAL),
+        'ERROR': str(ERROR),
+        'WARNING': str(WARNING),
+        'INFO': str(INFO),
+        'DEBUG': str(DEBUG),
+        'NOTSET': str(NOTSET),
+    }.get(config['logging']['level'], config['logging']['level'])
+
     return config
 
 
