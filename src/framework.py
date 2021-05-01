@@ -3,6 +3,8 @@ from configparser import ConfigParser, ExtendedInterpolation
 from copy import copy
 from csv import writer
 from dis import distb
+from functools import partial
+from gzip import open as open_gzip
 from hashlib import sha3_512
 from io import StringIO
 from json import JSONDecoder
@@ -151,6 +153,10 @@ def _sleeper(id_, *args, progress=None, **kwargs):
     getLogger('JobRunner').info('done %i', id_)
 
 
+def _indexed_job(job, index, given_args, *args, **kwargs):
+    return (index, job(*given_args, *args, **kwargs))
+
+
 def run_jobs(
     job: Callable,
     working_set: Iterable,
@@ -264,9 +270,26 @@ def run_jobs(
             new_time = time()
             if result is None:
                 result = ()
-            with RESULTS_CSV.open('a') as f:
+            if config.getboolean('results', 'compress'):
+
+                def open_method(name, mode='rt'):
+                    return open_gzip(str(name) + '.gz', mode)
+
+            else:
+                open_method = open
+
+            with open_method(config['results']['file_name'], mode='at') as f:
                 results_writer = writer(f)
-                results_writer.writerow((start_time, new_time - last_time, new_time, *result))
-            parse_function(config, start_time, new_time - last_time, new_time, *result)
+                meta = []
+                if config.getboolean('results', 'include_start_time'):
+                    meta.append(start_time)
+                if config.getboolean('results', 'include_job_interval'):
+                    meta.append(new_time - last_time)
+                if config.getboolean('results', 'include_job_done_time'):
+                    meta.append(new_time)
+                if config.getboolean('results', 'include_job_id'):
+                    meta.append(job_id)
+                results_writer.writerow((*meta, *result))
+            parse_function(config, *meta, *result)
             last_time = new_time
     return cast(T, current)
