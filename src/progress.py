@@ -304,13 +304,14 @@ class ProgressImapResult(ProgressResult, Iterable[_T]):
             while True:
                 self.print_info(style, self.bar_length, output_lines, max_len, self.fill_char, self.main_name)
                 try:
-                    yield self.next(timeout=0.05)
+                    yield self.next(timeout=0.05)  # pylint: disable=not-callable
                 except TimeoutError:
                     pass
                 except StopIteration:
                     break
-        if style == 2:
-            print()
+        # TODO: maybe make this configurable?
+        # if style == 2:
+        #     print()
         yield from self._wrapped_object
 
 
