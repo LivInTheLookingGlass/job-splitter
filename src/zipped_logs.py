@@ -8,8 +8,8 @@ class ZippedRotatingFileHandler(RotatingFileHandler):
         super().__init__(*args, **kwargs)
         self.__closed = False
 
-    def _zip_file(self, name):
-        return name
+    def _zip_file(self, name, mode='w'):
+        return ZipFile(name, mode, compression=ZIP_DEFLATED, compresslevel=9, allowZip64=True)
 
     def rotation_filename(self, string):
         return string + '.zip'
@@ -17,7 +17,7 @@ class ZippedRotatingFileHandler(RotatingFileHandler):
     def close(self):
         super().close()
         if not self.__closed:
-            with ZipFile(self.baseFilename + '.zip', 'w', compression=ZIP_DEFLATED, compresslevel=9, allowZip64=True) as dest:
+            with self._zip_file(self.baseFilename + '.zip') as dest:
                 basename = path.basename(self.baseFilename)
                 with open(self.baseFilename, 'rb') as f:
                     dest.writestr(basename, f.read())
@@ -27,7 +27,7 @@ class ZippedRotatingFileHandler(RotatingFileHandler):
                     fn = "%s.%d.zip" % (self.baseFilename, i)
                     if not path.exists(fn):
                         break
-                    with ZipFile(fn, 'r', compression=ZIP_DEFLATED, compresslevel=9, allowZip64=True) as src:
+                    with self._zip_file(fn, 'r') as src:
                         dest.writestr(path.basename(basename + '.' + str(i).zfill(max_digits)), src.read(basename))
                     remove(fn)
         self.__closed = True
@@ -36,7 +36,7 @@ class ZippedRotatingFileHandler(RotatingFileHandler):
         """Rotate files by placing them into a zip file."""
         if source == self.baseFilename:
             with open(source, "rb") as sf:
-                with ZipFile(dest, 'a', compression=ZIP_DEFLATED, compresslevel=9, allowZip64=True) as z:
+                with self._zip_file(dest) as z:
                     z.writestr(path.basename(self.baseFilename), sf.read())
             remove(source)
         else:
