@@ -22,7 +22,7 @@ class ZippedRotatingFileHandler(RotatingFileHandler):
                 with open(self.baseFilename, 'rb') as f:
                     dest.writestr(basename, f.read())
                 remove(self.baseFilename)
-                for i in range(1, self.backupCount - 1):
+                for i in range(1, self.backupCount):
                     fn = "%s.%d.zip" % (self.baseFilename, i)
                     if not path.exists(fn):
                         break
