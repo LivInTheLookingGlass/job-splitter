@@ -1,5 +1,7 @@
 # cython: language_level=3
 
+from time import sleep
+
 cdef extern from "math.h":
     double NAN
 
@@ -32,6 +34,9 @@ cdef inline (double, ErrorType) _increment_progress(object p, double progress, d
 cdef public api DoubleWithError increment_progress(object p, double progress, double base):
     ret = _increment_progress(p, progress, base)
     return DoubleWithError(ret[0], ret[1])
+
+cdef public void py_sleep(double sleep_time):
+    sleep(sleep_time)
 
 cdef extern from "/home/gappleto/Syncthing/MSU Notes/Research Framework/example_header.h":
     struct ReturnValue:
