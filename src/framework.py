@@ -209,7 +209,7 @@ def run_jobs(
     if seed is override_seed:
         logger.info('Using override seed for random module: %r', seed)
     random_obj = Random(seed)
-    indexed_set = list(enumerate(working_set))
+    indexed_set = [(idx, (*items, copy(random_obj), config)) for idx, items in enumerate(working_set)]
     random_obj.shuffle(indexed_set)
 
     if ID is not None:
@@ -218,7 +218,6 @@ def run_jobs(
         indexed_set = indexed_set[START:STOP]
     else:
         START = 0
-    indexed_set = [(idx, (*items, copy(random_obj), config)) for idx, items in enumerate(working_set)]
     response = ''
 
     while not response.lower().startswith('y'):
