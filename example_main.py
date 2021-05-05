@@ -5,6 +5,11 @@ from typing import Type
 from src.framework import get_config, make_config_files, run_jobs, _sleeper
 from src.zipped_logs import ZippedRotatingFileHandler
 
+from pyximport import install
+install()
+
+from example_cython import job
+
 
 if __name__ == '__main__':
     # setup section
@@ -33,7 +38,7 @@ if __name__ == '__main__':
 
     # setup done
     try:
-        run_jobs(_sleeper, [(x, ) for x in range(256)])
+        run_jobs(job, [(x, ) for x in range(256)])
         # optional teardown
         # ...
     finally:
