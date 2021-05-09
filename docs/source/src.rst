@@ -4,26 +4,19 @@ src package
 Submodules
 ----------
 
+src.config module
+-----------------
+
+.. automodule:: src.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:
+
 src.framework module
 --------------------
 
 .. automodule:: src.framework
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-src.gzip\_file\_stream module
------------------------------
-
-.. automodule:: src.gzip_file_stream
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-src.pluggable module
---------------------
-
-.. automodule:: src.pluggable
    :members:
    :undoc-members:
    :show-inheritance:
@@ -43,6 +36,7 @@ src.zipped\_logs module
    :members:
    :undoc-members:
    :show-inheritance:
+   :inherited-members:
 
 Module contents
 ---------------

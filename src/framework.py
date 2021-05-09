@@ -66,6 +66,37 @@ def run_jobs(
     reduce_start: T = None,
     override_seed: Optional[bytes] = None
 ) -> T:
+    """Run a set of basic map/reduce jobs.
+
+    This function does a lot of legwork in addition to simply running the jobs. Mainly it
+
+    1. Injects helper arguments into your job (a configuration file, a consistently-initialized random object, and a
+       progress reporter)
+    2. Sets up the logging module to collect data across all resulting processes
+    3. Ensures that a deterministic but psuedo-random jobs distribution is achieved
+    4. Automatically record results to a CSV file
+
+    Distribution is achieved using the :func:`src.config.get_entropy` function. This (unless overridden) provides the
+    seed for the random object. This object is then distributed to other jobs, and is also used to shuffle the job pool
+    for an even distribution of workloads. This helps ensure that if any host goes down, it is less likely to affect
+    your data sampling.
+
+    An optional setup function is provided which can be used to prepare your environment. This will be run once and
+    only on the main process.
+
+    Process initialization functions are also provided. These are run at the start of each worker process. These are
+    used according to the API defined by :obj:`multiprocessing.pool.Pool`. Please see documentation there for more
+    details.
+
+    In addition, a reduce function is also usable. It is very important that the provided function be commutative, as
+    job processing order is *not guaranteed* and should *not be depended on*. If this function errors, the main process
+    will continue while logging an error. This is because if best practices are followed you should be able to
+    replicate the data provided by the reduce function after the fact. If available, exception information will be
+    generated to the bytecode level. If not, a standard traceback is provided.
+
+    The function one may pass to this is a parser function. The parser function is fed the raw Python objects returned
+    by your job (just like the CSV writer). You may do whatever you wish with this information.
+    """
     logger = getLogger('JobRunner')
     logger.debug('Checking configuration files')
     make_config_files()
