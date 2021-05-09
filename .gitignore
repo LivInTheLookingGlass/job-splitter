@@ -1,0 +1,9 @@
+docs/build
+src/build
+.vscode
+**.pyc
+results.csv*
+machines.json
+header.csv
+runner.config
+*.zip
