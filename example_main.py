@@ -2,7 +2,8 @@ from logging import getLogger, Formatter
 from logging.handlers import RotatingFileHandler
 from typing import Type
 
-from src.framework import get_config, make_config_files, run_jobs, _sleeper
+from src.config import get_config, make_config_files
+from src.framework import run_jobs, _sleeper
 from src.zipped_logs import ZippedRotatingFileHandler
 
 
